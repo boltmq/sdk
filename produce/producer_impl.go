@@ -18,13 +18,14 @@ import (
 	"sync"
 
 	"github.com/boltmq/common/basis"
+	"github.com/boltmq/sdk/client"
 	"github.com/boltmq/sdk/common"
 )
 
 type producerImpl struct {
 	producerGroup           string
 	cfg                     config
-	topicPublishInfoTable   map[string]topicPublishInfo
+	topicPublishInfoTable   map[string]client.TopicPublishInfo
 	topicPublishInfoTableMu sync.RWMutex
 	status                  common.SRVStatus
 }
@@ -41,16 +42,16 @@ func newProducerImpl(producerGroup string) *producerImpl {
 			retryAnotherBrokerWhenNotStoreOK: false,
 			maxMessageSize:                   1024 * 128,
 			unitMode:                         false,
-			client: clientConfig{
-				instanceName:                  defaultInstanceName(),
-				clientIP:                      defaultLocalAddress(),
-				clientCallbackExecutorThreads: runtime.NumCPU(),
-				pullNameServerInterval:        1000 * 30,
-				heartbeatBrokerInterval:       1000 * 30,
-				persistConsumerOffsetInterval: 1000 * 5,
+			client: client.Config{
+				InstanceName:                  defaultInstanceName(),
+				ClientIP:                      defaultLocalAddress(),
+				ClientCallbackExecutorThreads: runtime.NumCPU(),
+				PullNameServerInterval:        1000 * 30,
+				HeartbeatBrokerInterval:       1000 * 30,
+				PersistConsumerOffsetInterval: 1000 * 5,
 			},
 		},
-		topicPublishInfoTable: make(map[string]topicPublishInfo),
+		topicPublishInfoTable: make(map[string]client.TopicPublishInfo),
 		status:                common.CREATE_JUST,
 	}
 }
@@ -65,18 +66,18 @@ func (producer *producerImpl) NameSrvAddrs(addrs []string) {
 	for _, addr := range addrs {
 		nameSrvMap[addr] = struct{}{}
 	}
-	for _, addr := range producer.cfg.client.nameSrvAddrs {
+	for _, addr := range producer.cfg.client.NameSrvAddrs {
 		nameSrvMap[addr] = struct{}{}
 	}
-	producer.cfg.client.nameSrvAddrs = nil
+	producer.cfg.client.NameSrvAddrs = nil
 
 	for addr, _ := range nameSrvMap {
-		producer.cfg.client.nameSrvAddrs = append(producer.cfg.client.nameSrvAddrs, addr)
+		producer.cfg.client.NameSrvAddrs = append(producer.cfg.client.NameSrvAddrs, addr)
 	}
 }
 
 func (producer *producerImpl) InstanceName(instanceName string) {
-	producer.cfg.client.instanceName = instanceName
+	producer.cfg.client.InstanceName = instanceName
 }
 
 func (producer *producerImpl) Start() error {

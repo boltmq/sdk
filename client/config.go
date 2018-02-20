@@ -11,13 +11,14 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package produce
+package client
 
-import "github.com/boltmq/common/message"
-
-type topicPublishInfo struct {
-	order               bool
-	haveTopicRouterInfo bool
-	messageQueues       []*message.MessageQueue
-	sendWhichQueue      int64
+type Config struct {
+	NameSrvAddrs                  []string
+	InstanceName                  string
+	ClientIP                      string
+	ClientCallbackExecutorThreads int
+	PullNameServerInterval        int
+	HeartbeatBrokerInterval       int
+	PersistConsumerOffsetInterval int
 }

@@ -18,6 +18,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/boltmq/sdk/client"
 	"github.com/go-errors/errors"
 )
 
@@ -30,17 +31,7 @@ type config struct {
 	retryAnotherBrokerWhenNotStoreOK bool
 	maxMessageSize                   int
 	unitMode                         bool
-	client                           clientConfig
-}
-
-type clientConfig struct {
-	nameSrvAddrs                  []string
-	instanceName                  string
-	clientIP                      string
-	clientCallbackExecutorThreads int
-	pullNameServerInterval        int
-	heartbeatBrokerInterval       int
-	persistConsumerOffsetInterval int
+	client                           client.Config
 }
 
 func defaultLocalAddress() string {
