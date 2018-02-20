@@ -19,13 +19,14 @@ import (
 
 type Producer interface {
 	NameSrvAddrs(addrs []string)
+	InstanceName(instanceName string)
 	Send(msg *message.Message) (*Result, error)
 	SendOneWay(msg *message.Message) error
 	SendCallBack(msg *message.Message, callback Callback) error
-	Start()
+	Start() error
 	Stop()
 }
 
-func New() Producer {
+func New(producerGroup string) Producer {
 	return nil
 }

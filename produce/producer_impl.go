@@ -14,8 +14,10 @@
 package produce
 
 import (
+	"runtime"
 	"sync"
 
+	"github.com/boltmq/common/basis"
 	"github.com/boltmq/sdk/common"
 )
 
@@ -25,4 +27,67 @@ type producerImpl struct {
 	topicPublishInfoTable   map[string]topicPublishInfo
 	topicPublishInfoTableMu sync.RWMutex
 	status                  common.SRVStatus
+}
+
+func newProducerImpl(producerGroup string) *producerImpl {
+	return &producerImpl{
+		producerGroup: producerGroup,
+		cfg: config{
+			createTopic:                      basis.DEFAULT_TOPIC,
+			topicQueueNums:                   4,
+			sendMsgTimeout:                   3000,
+			compressMsgBodyOverHowmuch:       1024 * 4,
+			retryTimesWhenSendFailed:         2,
+			retryAnotherBrokerWhenNotStoreOK: false,
+			maxMessageSize:                   1024 * 128,
+			unitMode:                         false,
+			client: clientConfig{
+				instanceName:                  defaultInstanceName(),
+				clientIP:                      defaultLocalAddress(),
+				clientCallbackExecutorThreads: runtime.NumCPU(),
+				pullNameServerInterval:        1000 * 30,
+				heartbeatBrokerInterval:       1000 * 30,
+				persistConsumerOffsetInterval: 1000 * 5,
+			},
+		},
+		topicPublishInfoTable: make(map[string]topicPublishInfo),
+		status:                common.CREATE_JUST,
+	}
+}
+
+func (producer *producerImpl) NameSrvAddrs(addrs []string) {
+	length := len(addrs)
+	if length == 0 {
+		return
+	}
+
+	nameSrvMap := make(map[string]struct{})
+	for _, addr := range addrs {
+		nameSrvMap[addr] = struct{}{}
+	}
+	for _, addr := range producer.cfg.client.nameSrvAddrs {
+		nameSrvMap[addr] = struct{}{}
+	}
+	producer.cfg.client.nameSrvAddrs = nil
+
+	for addr, _ := range nameSrvMap {
+		producer.cfg.client.nameSrvAddrs = append(producer.cfg.client.nameSrvAddrs, addr)
+	}
+}
+
+func (producer *producerImpl) InstanceName(instanceName string) {
+	producer.cfg.client.instanceName = instanceName
+}
+
+func (producer *producerImpl) Start() error {
+	switch producer.status {
+	case common.CREATE_JUST:
+	case common.RUNNING:
+	case common.SHUTDOWN_ALREADY:
+	case common.START_FAILED:
+	default:
+	}
+
+	// 向所有broker发送心跳
+	return nil
 }
