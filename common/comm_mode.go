@@ -11,19 +11,25 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package client
+package common
 
-import "github.com/boltmq/sdk/common"
+type CommunicationMode int
 
-type Result = common.Result
+const (
+	SYNC CommunicationMode = iota
+	ASYNC
+	ONEWAY
+)
 
-type Callback func(r *Result, err error)
-
-type producerInner interface {
-	// 获取生产者topic信息列表
-	GetPublishTopicList() []string
-	// topic信息是否需要更新
-	IsPublishTopicNeedUpdate(topic string) bool
-	// 更新topic信息
-	UpdateTopicPublishInfo(topic string, info *TopicPublishInfo)
+func (cm CommunicationMode) String() string {
+	switch cm {
+	case SYNC:
+		return "SYNC"
+	case ASYNC:
+		return "ASYNC"
+	case ONEWAY:
+		return "ONEWAY"
+	default:
+		return "Unknow"
+	}
 }

@@ -11,19 +11,34 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package client
+package boltmq
 
-import "github.com/boltmq/sdk/common"
+import (
+	"github.com/boltmq/common/message"
+	"github.com/boltmq/sdk/common"
+)
+
+const (
+	SEND_OK common.ResultStatus = common.SEND_OK
+	FLUSH_DISK_TIMEOUT
+	FLUSH_SLAVE_TIMEOUT
+	SLAVE_NOT_AVAILABLE
+)
 
 type Result = common.Result
 
 type Callback func(r *Result, err error)
 
-type producerInner interface {
-	// 获取生产者topic信息列表
-	GetPublishTopicList() []string
-	// topic信息是否需要更新
-	IsPublishTopicNeedUpdate(topic string) bool
-	// 更新topic信息
-	UpdateTopicPublishInfo(topic string, info *TopicPublishInfo)
+type Producer interface {
+	NameSrvAddrs(addrs []string)
+	InstanceName(instanceName string)
+	Send(msg *message.Message) (*Result, error)
+	SendOneWay(msg *message.Message) error
+	SendCallBack(msg *message.Message, callback Callback) error
+	Start() error
+	Stop()
+}
+
+func NewProduer(producerGroup string) Producer {
+	return nil
 }

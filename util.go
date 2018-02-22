@@ -11,28 +11,15 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package produce
+package boltmq
 
 import (
 	"net"
 	"os"
 	"strings"
 
-	"github.com/boltmq/sdk/client"
 	"github.com/go-errors/errors"
 )
-
-type config struct {
-	createTopic                      string
-	topicQueueNums                   int
-	sendMsgTimeout                   int64
-	compressMsgBodyOverHowmuch       int
-	retryTimesWhenSendFailed         int32
-	retryAnotherBrokerWhenNotStoreOK bool
-	maxMessageSize                   int
-	unitMode                         bool
-	client                           client.Config
-}
 
 func defaultLocalAddress() string {
 	if laddr, err := localAddress(); err == nil {

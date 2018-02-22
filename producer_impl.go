@@ -11,7 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package produce
+package boltmq
 
 import (
 	"runtime"
@@ -28,6 +28,18 @@ type producerImpl struct {
 	topicPublishInfoTable   map[string]client.TopicPublishInfo
 	topicPublishInfoTableMu sync.RWMutex
 	status                  common.SRVStatus
+}
+
+type config struct {
+	createTopic                      string
+	topicQueueNums                   int
+	sendMsgTimeout                   int64
+	compressMsgBodyOverHowmuch       int
+	retryTimesWhenSendFailed         int32
+	retryAnotherBrokerWhenNotStoreOK bool
+	maxMessageSize                   int
+	unitMode                         bool
+	client                           client.Config
 }
 
 func newProducerImpl(producerGroup string) *producerImpl {

@@ -23,4 +23,5 @@ type MQClient struct {
 	producersMu sync.RWMutex             //
 	consumers   map[string]consumerInner // key: group
 	consumersMu sync.RWMutex             //
+	clientAPI   *mqClientAPI
 }

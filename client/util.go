@@ -13,17 +13,24 @@
 // limitations under the License.
 package client
 
-import "github.com/boltmq/sdk/common"
+import (
+	"fmt"
+	"strings"
+)
 
-type Result = common.Result
+const (
+	VIRTUAL_APPGROUP_PREFIX = "%%PROJECT_%s%%"
+)
 
-type Callback func(r *Result, err error)
+func buildWithProjectGroup(origin string, groupPrefix string) string {
+	if groupPrefix == "" {
+		return origin
+	}
 
-type producerInner interface {
-	// 获取生产者topic信息列表
-	GetPublishTopicList() []string
-	// topic信息是否需要更新
-	IsPublishTopicNeedUpdate(topic string) bool
-	// 更新topic信息
-	UpdateTopicPublishInfo(topic string, info *TopicPublishInfo)
+	prefix := fmt.Sprintf(VIRTUAL_APPGROUP_PREFIX, groupPrefix)
+	if strings.HasSuffix(origin, prefix) {
+		return origin
+	}
+
+	return strings.Join([]string{origin, prefix}, "")
 }
