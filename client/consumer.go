@@ -16,6 +16,7 @@ package client
 import (
 	"github.com/boltmq/common/message"
 	"github.com/boltmq/common/protocol/heartbeat"
+	"github.com/boltmq/sdk/common"
 )
 
 type consumerInner interface {
@@ -38,4 +39,14 @@ type consumerInner interface {
 	PersistConsumerOffset()
 	// 负载
 	DoRebalance()
+}
+
+type PullResultExt struct {
+	*common.PullResult
+	suggestWhichBrokerId int64
+	messageBinary        []byte
+}
+
+type PullCallback interface {
+	OnSuccess(pullResultExt *PullResultExt)
 }

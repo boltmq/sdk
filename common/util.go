@@ -11,25 +11,58 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package boltmq
+package common
 
 import (
+	"fmt"
 	"net"
-	"os"
 	"strings"
 
 	"github.com/go-errors/errors"
+	"github.com/pquerna/ffjson/ffjson"
 )
 
-func defaultLocalAddress() string {
-	if laddr, err := localAddress(); err == nil {
-		return laddr
+const (
+	VIRTUAL_APPGROUP_PREFIX = "%%PROJECT_%s%%"
+)
+
+func BuildWithProjectGroup(origin string, groupPrefix string) string {
+	if groupPrefix == "" {
+		return origin
 	}
 
-	return ""
+	prefix := fmt.Sprintf(VIRTUAL_APPGROUP_PREFIX, groupPrefix)
+	if strings.HasSuffix(origin, prefix) {
+		return origin
+	}
+
+	return strings.Join([]string{origin, prefix}, "")
 }
 
-func localAddress() (laddr string, err error) {
+func ClearProjectGroup(origin string, groupPrefix string) string {
+	prefix := fmt.Sprintf(VIRTUAL_APPGROUP_PREFIX, groupPrefix)
+	if !strings.EqualFold(groupPrefix, "") && strings.HasSuffix(origin, prefix) {
+		return origin[0:strings.Index(origin, prefix)]
+	}
+
+	return origin
+}
+
+// Encode Json Encode
+// Author: rongzhihong
+// Since: 2017/9/19
+func Encode(v interface{}) ([]byte, error) {
+	return ffjson.Marshal(v)
+}
+
+// Decode Json Decode
+// Author: rongzhihong
+// Since: 2017/9/19
+func Decode(data []byte, v interface{}) error {
+	return ffjson.Unmarshal(data, v)
+}
+
+func LocalAddress() (laddr string, err error) {
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
 		return laddr, err
@@ -53,13 +86,4 @@ func isIntranetIpv4(ip string) bool {
 		return true
 	}
 	return false
-}
-
-func defaultInstanceName() string {
-	instanceName := os.Getenv("BOLTMQ_CLIENT_NAME")
-	if instanceName == "" {
-		instanceName = "DEFAULT"
-	}
-
-	return instanceName
 }

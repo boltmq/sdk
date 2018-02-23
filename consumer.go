@@ -11,12 +11,27 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package consume
+package boltmq
 
 import (
 	"github.com/boltmq/common/message"
 	"github.com/boltmq/common/protocol/heartbeat"
+	"github.com/boltmq/sdk/common"
 )
+
+const (
+	// Founded
+	FOUND common.PullStatus = common.FOUND
+	// No new message can be pull
+	NO_NEW_MSG
+	// Filtering results can not match
+	NO_MATCHED_MSG
+	// Illegal offset，may be too big or too small
+	OFFSET_ILLEGAL
+)
+
+type PullResult = common.PullResult
+type MessageListener interface{}
 
 type PullConsumer interface {
 	NameSrvAddrs(addrs []string)

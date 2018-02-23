@@ -14,6 +14,7 @@
 package boltmq
 
 import (
+	"os"
 	"runtime"
 	"sync"
 
@@ -103,4 +104,21 @@ func (producer *producerImpl) Start() error {
 
 	// 向所有broker发送心跳
 	return nil
+}
+
+func defaultLocalAddress() string {
+	if laddr, err := common.LocalAddress(); err == nil {
+		return laddr
+	}
+
+	return ""
+}
+
+func defaultInstanceName() string {
+	instanceName := os.Getenv("BOLTMQ_CLIENT_NAME")
+	if instanceName == "" {
+		instanceName = "DEFAULT"
+	}
+
+	return instanceName
 }

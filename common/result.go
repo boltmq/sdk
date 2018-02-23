@@ -27,6 +27,21 @@ type Result struct {
 	TransId     string
 }
 
+func NewResult(groupPrefix string, status ResultStatus, msgId string, messageQueue *message.MessageQueue,
+	queueOffset int64, transId string) *Result {
+	if groupPrefix != "" {
+		messageQueue.Topic = ClearProjectGroup(messageQueue.Topic, groupPrefix)
+	}
+
+	return &Result{
+		Status:      status,
+		MsgId:       msgId,
+		Queue:       messageQueue,
+		QueueOffset: queueOffset,
+		TransId:     transId,
+	}
+}
+
 func (r *Result) String() string {
 	return fmt.Sprintf("Resut[MsgId:%s, Status:%s, Queue:%s, QueueOffset:%d, TransId:%d]",
 		r.MsgId, r.Status, r.Queue, r.QueueOffset, r.TransId)
@@ -39,6 +54,7 @@ const (
 	FLUSH_DISK_TIMEOUT
 	FLUSH_SLAVE_TIMEOUT
 	SLAVE_NOT_AVAILABLE
+	SEND_UNKNOW
 )
 
 func (status ResultStatus) String() string {
