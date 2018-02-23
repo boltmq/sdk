@@ -21,6 +21,7 @@ import (
 	"github.com/boltmq/common/message"
 	"github.com/boltmq/common/protocol/base"
 	"github.com/boltmq/common/protocol/head"
+	"github.com/boltmq/sdk/common"
 )
 
 type MQClient struct {
@@ -37,6 +38,8 @@ type MQClient struct {
 	topicRouteTableMu sync.RWMutex                    //
 	brokerAddrTable   map[string]map[int]string       // key: brokername value: map[key: brokerId value: addr]
 	brokerAddrTableMu sync.RWMutex                    //
+	rblService        *rebalanceService               //
+	status            common.SRVStatus                //
 	namesrvMu         sync.RWMutex                    //
 	heartbeatMu       sync.RWMutex                    //
 }
@@ -106,4 +109,14 @@ func (mqClient *MQClient) ConsumeMessageDirectly(msg *message.MessageExt,
 	//return result
 	//}
 	return nil
+}
+
+func (mqClient *MQClient) doRebalance() {
+	mqClient.consumersMu.RLock()
+	for _, ci := range mqClient.consumers {
+		if ci != nil {
+			ci.DoRebalance()
+		}
+	}
+	mqClient.consumersMu.RUnlock()
 }
