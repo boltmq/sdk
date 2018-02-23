@@ -120,3 +120,14 @@ func (mqClient *MQClient) doRebalance() {
 	}
 	mqClient.consumersMu.RUnlock()
 }
+
+func (mqClient *MQClient) selectConsumer(group string) consumerInner {
+	mqClient.consumersMu.RLock()
+	ci, ok := mqClient.consumers[group]
+	mqClient.consumersMu.RUnlock()
+	if !ok {
+		return nil
+	}
+
+	return ci
+}

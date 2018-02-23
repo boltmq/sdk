@@ -31,7 +31,7 @@ func newRebalanceService(mqClient *MQClient) *rebalanceService {
 	}
 }
 
-func (service *rebalanceService) Start() {
+func (service *rebalanceService) start() {
 	go func() {
 		for !service.isStoped {
 			select {
@@ -44,6 +44,6 @@ func (service *rebalanceService) Start() {
 	}()
 }
 
-func (service *rebalanceService) Shutdown() {
+func (service *rebalanceService) shutdown() {
 	service.isStoped = true
 }
