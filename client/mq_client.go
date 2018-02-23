@@ -20,27 +20,32 @@ import (
 	"github.com/boltmq/common/constant"
 	"github.com/boltmq/common/message"
 	"github.com/boltmq/common/protocol/base"
+	"github.com/boltmq/common/protocol/head"
 )
 
 type MQClient struct {
-	index           int32
-	clientId        string
-	cfg             Config
-	producers       map[string]producerInner        // key: group
-	producersMu     sync.RWMutex                    //
-	consumers       map[string]consumerInner        // key: group
-	consumersMu     sync.RWMutex                    //
-	clientAPI       *mqClientAPI                    //
-	adminAPI        *mqAdminAPI                     //
-	topicRouteTable map[string]*base.TopicRouteData // key: topic
-	brokerAddrTable map[string]map[int]string       // key: brokername value: map[key: brokerId value: addr]
-	namesrvMu       sync.RWMutex                    //
-	heartbeatMu     sync.RWMutex                    //
+	index             int32
+	clientId          string
+	cfg               Config
+	producers         map[string]producerInner        // key: group
+	producersMu       sync.RWMutex                    //
+	consumers         map[string]consumerInner        // key: group
+	consumersMu       sync.RWMutex                    //
+	clientAPI         *mqClientAPI                    //
+	adminAPI          *mqAdminAPI                     //
+	topicRouteTable   map[string]*base.TopicRouteData // key: topic
+	topicRouteTableMu sync.RWMutex                    //
+	brokerAddrTable   map[string]map[int]string       // key: brokername value: map[key: brokerId value: addr]
+	brokerAddrTableMu sync.RWMutex                    //
+	namesrvMu         sync.RWMutex                    //
+	heartbeatMu       sync.RWMutex                    //
 }
 
 // 查找broker的master地址
 func (mqClient *MQClient) FindBrokerAddressInPublish(brokerName string) string {
+	mqClient.brokerAddrTableMu.RLock()
 	baMap, ok := mqClient.brokerAddrTable[brokerName]
+	mqClient.brokerAddrTableMu.RUnlock()
 	if !ok {
 		return ""
 	}
@@ -75,4 +80,30 @@ func (mqClient *MQClient) topicRouteData2TopicSubscribeInfo(topic string, topicR
 	}
 
 	return mqs
+}
+
+// 立即执行负载
+func (mqClient *MQClient) rebalanceImmediately() {
+	//TODO:
+	//mqClient.rebalanceService.Wakeup <- true
+}
+
+func (mqClient *MQClient) ConsumeMessageDirectly(msg *message.MessageExt,
+	consumerGroup, brokerName string) *head.ConsumeMessageDirectlyResult {
+	mqClient.consumersMu.RLock()
+	ci, ok := mqClient.consumers[consumerGroup]
+	mqClient.consumersMu.RUnlock()
+	if !ok {
+		return nil
+	}
+
+	ci = ci
+	//TODO:
+	//result := ci.consumeMessageService.ConsumeMessageDirectly(msg, brokerName)
+
+	//if consumer, ok := mqConsumerInner.(*DefaultMQPushConsumerImpl); ok && consumer != nil {
+	//result := consumer.consumeMessageService.ConsumeMessageDirectly(msg, brokerName)
+	//return result
+	//}
+	return nil
 }
