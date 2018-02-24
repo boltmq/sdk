@@ -13,11 +13,22 @@
 // limitations under the License.
 package client
 
-import "github.com/boltmq/sdk/common"
+import (
+	"github.com/boltmq/sdk/common"
+)
 
 type Result = common.Result
 
-type Callback func(r *Result, err error)
+type Callback = common.Callback
+
+// 默认Producer
+type defaultProducer interface {
+	ResetClientCfg(cfg Config)
+	StartFlag(bool) error
+	ShutdownFlag(bool)
+	GetCreateTopicKey() string
+	GetDefaultTopicQueueNums() int
+}
 
 type producerInner interface {
 	// 获取生产者topic信息列表

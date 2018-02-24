@@ -36,7 +36,8 @@ type pullMessageService struct {
 func newPullMessageService(mqClient *MQClient) *pullMessageService {
 	return &pullMessageService{
 		mqClient: mqClient,
-		prCh:     make(chan *PullRequest)}
+		prCh:     make(chan *PullRequest),
+	}
 }
 
 func (service *pullMessageService) start() {

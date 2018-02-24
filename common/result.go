@@ -19,6 +19,8 @@ import (
 	"github.com/boltmq/common/message"
 )
 
+type Callback func(r *Result, err error)
+
 type Result struct {
 	Status      ResultStatus
 	MsgId       string

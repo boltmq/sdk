@@ -27,7 +27,7 @@ const (
 
 type Result = common.Result
 
-type Callback func(r *Result, err error)
+type Callback = common.Callback
 
 type Producer interface {
 	NameSrvAddrs(addrs []string)

@@ -35,6 +35,16 @@ type mqClientAPI struct {
 	processor      *remotingProcessor
 }
 
+func newMQClientAPI(processor *remotingProcessor) *mqClientAPI {
+	api := &mqClientAPI{
+		remotingClient: remoting.NewNMRemotingClient(),
+		processor:      processor,
+	}
+	api.remotingClient.RegisterProcessor(protocol.NOTIFY_CONSUMER_IDS_CHANGED, processor)
+
+	return api
+}
+
 // Start 调用romoting的start
 func (api *mqClientAPI) start() {
 	api.remotingClient.Start()
