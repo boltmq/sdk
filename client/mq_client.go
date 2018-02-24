@@ -130,7 +130,7 @@ func (mqClient *MQClient) Shutdown() {
 
 		mqClient.clientAPI.shutdown()
 		mqClient.rblService.shutdown()
-		//GetInstance().RemoveClientFactory(mqClient.clientId)
+		RemoveMQClient(mqClient.clientId)
 	case common.SHUTDOWN_ALREADY:
 	default:
 	}
