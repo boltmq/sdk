@@ -413,8 +413,9 @@ func (mqClient *MQClient) doRebalance() {
 
 func (mqClient *MQClient) selectConsumer(group string) consumerInner {
 	mqClient.consumerTableMu.RLock()
+	defer mqClient.consumerTableMu.RUnlock()
+
 	ci, ok := mqClient.consumerTable[group]
-	mqClient.consumerTableMu.RUnlock()
 	if !ok {
 		return nil
 	}
@@ -629,4 +630,184 @@ func topicRouteDataIsChange(old *base.TopicRouteData, new *base.TopicRouteData) 
 	sort.Sort(newQueueDatas)
 
 	return !nold.Equals(nnew)
+}
+
+// RegisterProducer 将生产者group和发送类保存到内存中
+func (mqClient *MQClient) RegisterProducer(group string, producer producerInner) bool {
+	var flag bool
+
+	mqClient.producerTableMu.Lock()
+	if _, ok := mqClient.producerTable[group]; !ok {
+		mqClient.producerTable[group] = producer
+		flag = true
+	}
+	mqClient.producerTableMu.Unlock()
+
+	return flag
+}
+
+// UnRegisterProducer 注销生产者
+func (mqClient *MQClient) UnRegisterProducer(group string) {
+	mqClient.producerTableMu.Lock()
+	delete(mqClient.producerTable, group)
+	mqClient.producerTableMu.Unlock()
+
+	mqClient.unRegisterClientWithLock(group, "")
+}
+
+// RegisterConsumer 将生产者group和发送类保存到内存中
+func (mqClient *MQClient) RegisterConsumer(group string, consumer consumerInner) bool {
+	var flag bool
+
+	mqClient.consumerTableMu.Lock()
+	if _, ok := mqClient.consumerTable[group]; !ok {
+		mqClient.consumerTable[group] = consumer
+		flag = true
+	}
+	mqClient.consumerTableMu.Unlock()
+
+	return flag
+}
+
+// UnRegisterConsumer 注销消费者
+func (mqClient *MQClient) UnRegisterConsumer(group string) {
+	mqClient.consumerTableMu.Lock()
+	delete(mqClient.consumerTable, group)
+	mqClient.consumerTableMu.Unlock()
+
+	mqClient.unRegisterClientWithLock("", group)
+}
+
+// 注销客户端
+func (mqClient *MQClient) unRegisterClientWithLock(producerGroup, consumerGroup string) {
+	mqClient.heartbeatMu.Lock()
+	defer mqClient.heartbeatMu.Unlock()
+
+	brokerAddrTable := make(map[string]string)
+	mqClient.brokerAddrTableMu.RLock()
+	for brokerName, brokerData := range mqClient.brokerAddrTable {
+		if brokerData == nil {
+			continue
+		}
+
+		for _, addr := range brokerData {
+			if addr != "" {
+				brokerAddrTable[addr] = brokerName
+			}
+		}
+	}
+	mqClient.brokerAddrTableMu.RUnlock()
+
+	// unregister client
+	for addr, brokerName := range brokerAddrTable {
+		err := mqClient.clientAPI.unRegisterClient(addr, mqClient.clientId, producerGroup, consumerGroup, 3000)
+		if err != nil {
+			logger.Infof("unregister client [producerGroup: %s, consumerGroup: %s] from broker[%s, %s] failed: %s",
+				producerGroup, consumerGroup, brokerName, addr, err)
+		} else {
+			logger.Infof("unregister client [producerGroup: %s, consumerGroup: %s] from broker[%s, %s] success",
+				producerGroup, consumerGroup, brokerName, addr)
+		}
+	}
+}
+
+func (mqClient *MQClient) findConsumerIdList(topic string, group string) ([]string, error) {
+	brokerAddr := mqClient.findBrokerAddrByTopic(topic)
+	if brokerAddr == "" {
+		mqClient.UpdateTopicRouteInfoFromNameServerByTopic(topic)
+		brokerAddr = mqClient.findBrokerAddrByTopic(topic)
+	}
+
+	if brokerAddr != "" {
+		return mqClient.clientAPI.getConsumerIdListByGroup(brokerAddr, group, 3000)
+	}
+
+	return []string{}, nil
+}
+
+func (mqClient *MQClient) findBrokerAddrByTopic(topic string) string {
+	mqClient.topicRouteTableMu.RLock()
+	defer mqClient.topicRouteTableMu.RUnlock()
+
+	if topicRouteData, ok := mqClient.topicRouteTable[topic]; ok {
+		if topicRouteData != nil {
+			if len(topicRouteData.BrokerDatas) > 0 {
+				bd := topicRouteData.BrokerDatas[0]
+				return bd.SelectBrokerAddr()
+			}
+		}
+	}
+
+	return ""
+}
+
+func (mqClient *MQClient) findBrokerAddressInAdmin(brokerName string) (*common.FindBrokerResult, error) {
+	mqClient.brokerAddrTableMu.RLock()
+	brokerMap, ok := mqClient.brokerAddrTable[brokerName]
+	mqClient.brokerAddrTableMu.RUnlock()
+	if !ok {
+		return nil, errors.Errorf("not found broker addr by %s", brokerName)
+	}
+
+	if brokerMap == nil || len(brokerMap) == 0 {
+		return nil, errors.Errorf("not found broker addr by %s", brokerName)
+	}
+
+	var result *common.FindBrokerResult
+	for bid, addr := range brokerMap {
+		if addr == "" {
+			continue
+		}
+
+		result = &common.FindBrokerResult{
+			BrokerAddr: addr,
+		}
+		if bid != basis.MASTER_ID {
+			result.Slave = true
+		}
+		break
+	}
+
+	if result == nil {
+		return nil, errors.Errorf("not found broker addr by %s", brokerName)
+	}
+
+	return result, nil
+}
+
+func (mqClient *MQClient) findBrokerAddressInSubscribe(brokerName string, brokerId int,
+	onlyThisBroker bool) (*common.FindBrokerResult, error) {
+	mqClient.brokerAddrTableMu.RLock()
+	brokerMap, ok := mqClient.brokerAddrTable[brokerName]
+	mqClient.brokerAddrTableMu.RUnlock()
+	if !ok {
+		return nil, errors.Errorf("not found broker addr by %s,%d", brokerName, brokerId)
+	}
+
+	if brokerMap == nil || len(brokerMap) == 0 || brokerId >= len(brokerMap) {
+		return nil, errors.Errorf("not found broker addr by %s,%d", brokerName, brokerId)
+	}
+
+	baddr := brokerMap[brokerId]
+	slave := (brokerId != basis.MASTER_ID)
+	if baddr == "" && !onlyThisBroker {
+		for bid, addr := range brokerMap {
+			if addr == "" {
+				continue
+			}
+
+			baddr = addr
+			slave = (bid != basis.MASTER_ID)
+			break
+		}
+	}
+
+	if baddr == "" {
+		return nil, errors.Errorf("not found broker addr by %s,%d", brokerName, brokerId)
+	}
+
+	return &common.FindBrokerResult{
+		BrokerAddr: baddr,
+		Slave:      slave,
+	}, nil
 }

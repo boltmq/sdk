@@ -73,3 +73,9 @@ func (status ResultStatus) String() string {
 		return "Unknow"
 	}
 }
+
+// FindBrokerResult
+type FindBrokerResult struct {
+	BrokerAddr string
+	Slave      bool
+}
