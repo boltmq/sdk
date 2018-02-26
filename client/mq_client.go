@@ -49,7 +49,7 @@ type MQClient struct {
 	brokerAddrTableMu sync.RWMutex                    //
 	pullMsgService    *pullMessageService             //
 	rblService        *rebalanceService               //
-	defProducer       defaultProducer                 //
+	defaultProducer   producerOuter                   //
 	status            common.SRVStatus                //
 	namesrvMu         sync.RWMutex                    //
 	heartbeatMu       sync.RWMutex                    //
@@ -84,9 +84,9 @@ func NewMQClient(cfg Config, index int32, clientId string) *MQClient {
 	return mqClient
 }
 
-func (mqClient *MQClient) SetDefaultProduer(producer defaultProducer) {
-	mqClient.defProducer = producer
-	mqClient.defProducer.ResetClientCfg(mqClient.cfg)
+func (mqClient *MQClient) SetDefaultProduer(producer producerOuter) {
+	mqClient.defaultProducer = producer
+	mqClient.defaultProducer.ResetClientCfg(mqClient.cfg)
 }
 
 // Start
@@ -94,12 +94,12 @@ func (mqClient *MQClient) Start() {
 	switch mqClient.status {
 	case common.CREATE_JUST:
 		mqClient.status = common.START_FAILED
-		mqClient.clientAPI.start()            // Start request-response channel
-		mqClient.startScheduledTasks()        // Start various schedule tasks
-		mqClient.pullMsgService.start()       // Start pull service
-		mqClient.rblService.start()           // Start rebalance service
-		mqClient.defProducer.StartFlag(false) // Start push service
-		mqClient.status = common.RUNNING      // Set mqClient of status
+		mqClient.clientAPI.start()                // Start request-response channel
+		mqClient.startScheduledTasks()            // Start various schedule tasks
+		mqClient.pullMsgService.start()           // Start pull service
+		mqClient.rblService.start()               // Start rebalance service
+		mqClient.defaultProducer.StartFlag(false) // Start push service
+		mqClient.status = common.RUNNING          // Set mqClient of status
 	case common.RUNNING:
 	case common.SHUTDOWN_ALREADY:
 	case common.START_FAILED:
@@ -120,7 +120,7 @@ func (mqClient *MQClient) Shutdown() {
 	switch mqClient.status {
 	case common.CREATE_JUST:
 	case common.RUNNING:
-		mqClient.defProducer.ShutdownFlag(false)
+		mqClient.defaultProducer.ShutdownFlag(false)
 		mqClient.status = common.SHUTDOWN_ALREADY
 		mqClient.pullMsgService.shutdown()
 		for name, timer := range mqClient.timerTaskTable {
@@ -190,7 +190,7 @@ func (mqClient *MQClient) UpdateTopicRouteInfoFromNameServerByTopic(topic string
 	return mqClient.UpdateTopicRouteInfoFromNameServerByArgs(topic, false, nil)
 }
 
-func (mqClient *MQClient) UpdateTopicRouteInfoFromNameServerByArgs(topic string, isDefault bool, producer defaultProducer) bool {
+func (mqClient *MQClient) UpdateTopicRouteInfoFromNameServerByArgs(topic string, isDefault bool, producer producerOuter) bool {
 	mqClient.namesrvMu.Lock()
 	defer mqClient.namesrvMu.Unlock()
 

@@ -22,12 +22,13 @@ type Result = common.Result
 type Callback = common.Callback
 
 // 默认Producer
-type defaultProducer interface {
+type producerOuter interface {
 	ResetClientCfg(cfg Config)
 	StartFlag(bool) error
 	ShutdownFlag(bool)
 	GetCreateTopicKey() string
 	GetDefaultTopicQueueNums() int
+	producerInner
 }
 
 type producerInner interface {

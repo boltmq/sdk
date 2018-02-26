@@ -16,6 +16,7 @@ package client
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/boltmq/common/utils/codec"
@@ -36,4 +37,10 @@ func (cfg *Config) BuildClientId() string {
 	unixNano := time.Now().UnixNano()
 	hash := uint64(codec.HashCode(cfg.NameSrvAddrs))
 	return fmt.Sprintf("%s@%d#%d#%d", cfg.ClientIP, os.Getpid(), hash, unixNano)
+}
+
+func (cfg *Config) ChangeInstanceNameToPID() {
+	if cfg.InstanceName == "DEFAULT" {
+		cfg.InstanceName = strconv.Itoa(os.Getpid())
+	}
 }

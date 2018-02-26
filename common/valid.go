@@ -11,26 +11,24 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package client
+package common
 
 import (
-	"fmt"
-
-	"github.com/boltmq/common/message"
+	"github.com/go-errors/errors"
 )
 
-type TopicPublishInfo struct {
-	Order               bool
-	HaveTopicRouterInfo bool
-	MessageQueues       []*message.MessageQueue
-	SendWhichQueue      int64
-}
+const (
+	CHARACTER_MAX_LENGTH = 255
+)
 
-func (info *TopicPublishInfo) String() string {
-	if info == nil {
-		return "<nil>"
+func CheckGroup(group string) error {
+	if group == "" {
+		return errors.New("the specified group is blank")
 	}
 
-	return fmt.Sprintf("order:%t HaveTopicRouterInfo: %t SendWhichQueue: %d",
-		info.Order, info.HaveTopicRouterInfo, info.SendWhichQueue)
+	if len(group) > CHARACTER_MAX_LENGTH {
+		return errors.New("the specified group is longer than group max length 255")
+	}
+
+	return nil
 }
