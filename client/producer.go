@@ -25,7 +25,7 @@ type Callback = common.Callback
 type producerOuter interface {
 	ResetClientCfg(cfg Config)
 	StartFlag(bool) error
-	ShutdownFlag(bool)
+	StopFlag(bool)
 	GetCreateTopicKey() string
 	GetDefaultTopicQueueNums() int
 	producerInner

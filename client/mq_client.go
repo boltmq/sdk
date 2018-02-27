@@ -120,7 +120,7 @@ func (mqClient *MQClient) Shutdown() {
 	switch mqClient.status {
 	case common.CREATE_JUST:
 	case common.RUNNING:
-		mqClient.defaultProducer.ShutdownFlag(false)
+		mqClient.defaultProducer.StopFlag(false)
 		mqClient.status = common.SHUTDOWN_ALREADY
 		mqClient.pullMsgService.shutdown()
 		for name, timer := range mqClient.timerTaskTable {
@@ -143,9 +143,9 @@ func (mqClient *MQClient) startScheduledTasks() {
 
 	// 定时从nameserver更新topic route信息
 	updateRouteTicker := system.NewTicker(true, 10*time.Millisecond,
-		time.Duration(mqClient.cfg.PullNameServerInterval)*time.Millisecond, func() {
+		time.Duration(mqClient.cfg.PullNameServerInteval)*time.Millisecond, func() {
 			mqClient.UpdateTopicRouteInfoFromNameServer()
-			logger.Infof("update topic routeInfo from name server every [ %d ] sencond.", mqClient.cfg.PullNameServerInterval/1000)
+			logger.Infof("update topic routeInfo from name server every [ %d ] sencond.", mqClient.cfg.PullNameServerInteval/1000)
 		})
 	updateRouteTicker.Start()
 	mqClient.timerTaskTable["updateRouteTicker"] = updateRouteTicker
@@ -810,4 +810,9 @@ func (mqClient *MQClient) findBrokerAddressInSubscribe(brokerName string, broker
 		BrokerAddr: baddr,
 		Slave:      slave,
 	}, nil
+}
+
+func (mqClient *MQClient) SendMessage(addr string, brokerName string, msg *message.Message, header head.SendMessageRequestHeader,
+	timeout int64, commMode common.CommunicationMode, callback Callback) (*Result, error) {
+	return mqClient.clientAPI.sendMessage(addr, brokerName, msg, header, timeout, commMode, callback)
 }

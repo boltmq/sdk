@@ -40,5 +40,5 @@ type Producer interface {
 }
 
 func NewProduer(producerGroup string) Producer {
-	return nil
+	return newProducerImpl(producerGroup)
 }

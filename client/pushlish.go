@@ -15,6 +15,9 @@ package client
 
 import (
 	"fmt"
+	"math"
+	"strings"
+	"sync/atomic"
 
 	"github.com/boltmq/common/message"
 )
@@ -24,6 +27,32 @@ type TopicPublishInfo struct {
 	HaveTopicRouterInfo bool
 	MessageQueues       []*message.MessageQueue
 	SendWhichQueue      int64
+}
+
+// 取模获取选择队列
+func (info *TopicPublishInfo) SelectOneMessageQueue(lastBrokerName string) *message.MessageQueue {
+	if lastBrokerName == "" {
+		index := info.SendWhichQueue
+		atomic.AddInt64(&info.SendWhichQueue, 1)
+		value := int(math.Abs(float64(index)))
+		pos := value % len(info.MessageQueues)
+		mq := info.MessageQueues[pos]
+		return mq
+	}
+
+	index := info.SendWhichQueue
+	atomic.AddInt64(&info.SendWhichQueue, 1)
+	for _, mq := range info.MessageQueues {
+		index++
+		value := int(math.Abs(float64(index)))
+		pos := value % len(info.MessageQueues)
+		mq = info.MessageQueues[pos]
+		if !strings.EqualFold(mq.BrokerName, lastBrokerName) {
+			return mq
+		}
+	}
+
+	return nil
 }
 
 func (info *TopicPublishInfo) String() string {

@@ -27,7 +27,7 @@ type Config struct {
 	InstanceName                  string
 	ClientIP                      string
 	ClientCallbackExecutorThreads int
-	PullNameServerInterval        int
+	PullNameServerInteval         int
 	HeartbeatBrokerInterval       int
 	PersistConsumerOffsetInterval int
 }
